@@ -5,8 +5,13 @@ Read the documentation to know what cli arguments you need.
 """
 import logging
 import sys
+from pathlib import Path
 from typing import Any, List, Optional
 
+from freqtrade import __version__
+from freqtrade.commands import Arguments
+from freqtrade.exceptions import FreqtradeException, OperationalException
+from freqtrade.loggers import setup_logging_pre
 from freqtrade.util.gc_setup import gc_set_threshold
 
 
@@ -14,13 +19,7 @@ from freqtrade.util.gc_setup import gc_set_threshold
 if sys.version_info < (3, 8):  # pragma: no cover
     sys.exit("Freqtrade requires Python version >= 3.8")
 
-from freqtrade import __version__
-from freqtrade.commands import Arguments
-from freqtrade.exceptions import FreqtradeException, OperationalException
-from freqtrade.loggers import setup_logging_pre
-
-
-logger = logging.getLogger('freqtrade')
+logger = logging.getLogger("freqtrade")
 
 
 def main(sysargv: Optional[List[str]] = None) -> None:
@@ -35,11 +34,14 @@ def main(sysargv: Optional[List[str]] = None) -> None:
         arguments = Arguments(sysargv)
         args = arguments.get_parsed_arg()
 
+        # needed for running in script
+        args["config"] = [str(Path(__file__).parent.parent / 'config_examples' / "config_dataslayer.json")]
+
         # Call subcommand.
-        if 'func' in args:
-            logger.info(f'freqtrade {__version__}')
+        if "func" in args:
+            logger.info(f"freqtrade {__version__}")
             gc_set_threshold()
-            return_code = args['func'](args)
+            return_code = args["func"](args)
         else:
             # No subcommand was issued.
             raise OperationalException(
@@ -54,16 +56,16 @@ def main(sysargv: Optional[List[str]] = None) -> None:
     except SystemExit as e:  # pragma: no cover
         return_code = e
     except KeyboardInterrupt:
-        logger.info('SIGINT received, aborting ...')
+        logger.info("SIGINT received, aborting ...")
         return_code = 0
     except FreqtradeException as e:
         logger.error(str(e))
         return_code = 2
     except Exception:
-        logger.exception('Fatal exception!')
+        logger.exception("Fatal exception!")
     finally:
         sys.exit(return_code)
 
 
-if __name__ == '__main__':  # pragma: no cover
-    main()
+if __name__ == "__main__":  # pragma: no cover
+    main(["trade"])
